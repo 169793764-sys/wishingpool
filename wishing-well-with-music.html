@@ -1,0 +1,893 @@
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>许愿池 - 寄托心愿的地方</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind自定义主题 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1a56db',
+                        secondary: '#fbbf24',
+                        accent: '#7c3aed',
+                        neutral: '#f3f4f6',
+                        dark: '#1f2937'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        serif: ['Merriweather', 'Georgia', 'serif']
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'ripple': 'ripple 2s linear infinite',
+                        'shine': 'shine 3s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' }
+                        },
+                        ripple: {
+                            '0%': { transform: 'scale(0.8)', opacity: 1 },
+                            '100%': { transform: 'scale(2.5)', opacity: 0 }
+                        },
+                        shine: {
+                            '0%, 100%': { opacity: 0.8 },
+                            '50%': { opacity: 1 }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .text-shadow-lg {
+                text-shadow: 0 4px 8px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08);
+            }
+            .backdrop-blur {
+                backdrop-filter: blur(8px);
+            }
+            .water-effect {
+                background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+                position: relative;
+                overflow: hidden;
+            }
+            .water-effect::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: repeating-linear-gradient(
+                    0deg,
+                    rgba(255, 255, 255, 0.1),
+                    rgba(255, 255, 255, 0.1) 1px,
+                    transparent 1px,
+                    transparent 2px
+                );
+                animation: waterMove 10s linear infinite;
+            }
+            @keyframes waterMove {
+                0% { background-position: 0 0; }
+                100% { background-position: 0 20px; }
+            }
+            .coin {
+                position: absolute;
+                width: 10px;
+                height: 10px;
+                background: #fbbf24;
+                border-radius: 50%;
+                box-shadow: 0 0 5px rgba(255, 183, 3, 0.8);
+                opacity: 0;
+            }
+            .music-player {
+                transform: translateY(120%);
+                transition: transform 0.3s ease-out;
+            }
+            .music-player.active {
+                transform: translateY(0);
+            }
+            .volume-slider::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                background: #1a56db;
+                cursor: pointer;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-blue-50 to-indigo-50 min-h-screen font-sans text-gray-800">
+    <!-- 导航栏 -->
+    <nav class="fixed w-full bg-white/80 backdrop-blur z-50 shadow-sm transition-all duration-300" id="navbar">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-fountain text-primary text-2xl"></i>
+                <span class="text-xl font-bold text-primary">许愿池</span>
+            </div>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="#about" class="text-gray-600 hover:text-primary transition-colors">关于许愿池</a>
+                <a href="#wishes" class="text-gray-600 hover:text-primary transition-colors">心愿展示</a>
+                <a href="#make-wish" class="text-gray-600 hover:text-primary transition-colors">许下心愿</a>
+                <a href="#stories" class="text-gray-600 hover:text-primary transition-colors">许愿故事</a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <!-- 音乐控制按钮 -->
+                <button id="music-toggle" class="text-gray-600 hover:text-primary transition-colors relative">
+                    <i class="fa fa-music text-xl"></i>
+                    <span id="music-indicator" class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-green-500 opacity-0"></span>
+                </button>
+                <button class="md:hidden text-gray-600 focus:outline-none" id="menu-toggle">
+                    <i class="fa fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+        <!-- 移动端菜单 -->
+        <div class="md:hidden hidden bg-white shadow-md absolute w-full" id="mobile-menu">
+            <div class="container mx-auto px-4 py-3 flex flex-col space-y-3">
+                <a href="#about" class="text-gray-600 hover:text-primary py-2 transition-colors">关于许愿池</a>
+                <a href="#wishes" class="text-gray-600 hover:text-primary py-2 transition-colors">心愿展示</a>
+                <a href="#make-wish" class="text-gray-600 hover:text-primary py-2 transition-colors">许下心愿</a>
+                <a href="#stories" class="text-gray-600 hover:text-primary py-2 transition-colors">许愿故事</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 音乐播放器 -->
+    <div id="music-player" class="music-player fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur rounded-full shadow-lg p-3 z-40 max-w-md w-full flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <i class="fa fa-music text-primary"></i>
+            </div>
+            <div>
+                <h4 id="current-track" class="font-medium text-sm">流水轻音</h4>
+                <p id="track-artist" class="text-xs text-gray-500">自然之声</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <button id="prev-track" class="text-gray-600 hover:text-primary transition-colors">
+                <i class="fa fa-step-backward"></i>
+            </button>
+            <button id="play-pause" class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">
+                <i class="fa fa-play"></i>
+            </button>
+            <button id="next-track" class="text-gray-600 hover:text-primary transition-colors">
+                <i class="fa fa-step-forward"></i>
+            </button>
+        </div>
+        <div class="flex items-center space-x-2">
+            <i class="fa fa-volume-up text-gray-600"></i>
+            <input type="range" id="volume-slider" min="0" max="100" value="30" class="volume-slider w-20 h-1 bg-gray-200 rounded-full appearance-none cursor-pointer">
+        </div>
+    </div>
+
+    <!-- 英雄区域 -->
+    <header class="relative pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden">
+        <div class="absolute inset-0 z-0">
+            <img src="https://picsum.photos/id/1036/1920/1080" alt="美丽的许愿池背景" class="w-full h-full object-cover opacity-30">
+            <div class="absolute inset-0 bg-gradient-to-r from-primary/40 to-accent/40"></div>
+        </div>
+        
+        <div class="container mx-auto px-4 relative z-10">
+            <div class="max-w-3xl mx-auto text-center">
+                <h1 class="text-[clamp(2.5rem,5vw,4rem)] font-bold text-white leading-tight text-shadow-lg mb-6 animate-float">
+                    许愿池
+                </h1>
+                <p class="text-[clamp(1rem,2vw,1.25rem)] text-white/90 text-shadow mb-8">
+                    每一个涟漪，都承载着一个心愿；每一枚硬币，都寄托着一份期盼
+                </p>
+                <a href="#make-wish" class="inline-block bg-secondary hover:bg-secondary/90 text-dark font-semibold px-8 py-3 rounded-full shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">许下你的心愿</a>
+            </div>
+        </div>
+        
+        <!-- 装饰性波浪 -->
+        <div class="absolute bottom-0 left-0 w-full overflow-hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 100" class="w-full h-auto">
+                <path fill="#ffffff" fill-opacity="1" d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,48C1120,43,1280,53,1360,58.7L1440,64L1440,100L1360,100C1280,100,1120,100,960,100C800,100,640,100,480,100C320,100,160,100,80,100L0,100Z"></path>
+            </svg>
+        </div>
+    </header>
+
+    <!-- 关于许愿池 -->
+    <section id="about" class="py-16 md:py-24">
+        <div class="container mx-auto px-4">
+            <div class="max-w-3xl mx-auto text-center mb-16">
+                <h2 class="text-[clamp(1.8rem,3vw,2.5rem)] font-bold text-dark mb-4">关于许愿池</h2>
+                <div class="w-20 h-1 bg-primary mx-auto mb-6 rounded-full"></div>
+                <p class="text-gray-600 text-lg">许愿池的传统可以追溯到古代，人们相信向水中投掷硬币并许下愿望会带来好运和祝福。</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow p-6 transform hover:-translate-y-1 duration-300">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-6 mx-auto">
+                        <i class="fa fa-history text-primary text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-center mb-3">悠久历史</h3>
+                    <p class="text-gray-600 text-center">许愿池的历史可以追溯到古罗马时期，当时泉水被认为是神圣的，具有治愈能力。</p>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow p-6 transform hover:-translate-y-1 duration-300">
+                    <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-6 mx-auto">
+                        <i class="fa fa-globe text-accent text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-center mb-3">全球传统</h3>
+                    <p class="text-gray-600 text-center">从罗马的特雷维喷泉到世界各地的小型喷泉，许愿池成为了跨越文化的美好传统。</p>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow p-6 transform hover:-translate-y-1 duration-300">
+                    <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-6 mx-auto">
+                        <i class="fa fa-heart text-secondary text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-center mb-3">心灵寄托</h3>
+                    <p class="text-gray-600 text-center">许愿不仅是一种仪式，更是一种心灵的寄托，让人们对未来充满希望和期待。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 许愿池展示 -->
+    <section class="py-16 bg-gradient-to-b from-white to-blue-50 overflow-hidden">
+        <div class="container mx-auto px-4">
+            <div class="max-w-4xl mx-auto relative rounded-2xl overflow-hidden shadow-2xl">
+                <!-- 许愿池图片 -->
+                <div class="aspect-[4/3] relative">
+                    <img src="https://picsum.photos/id/1039/1200/900" alt="美丽的许愿池" class="w-full h-full object-cover">
+                    
+                    <!-- 水波纹效果 -->
+                    <div class="absolute bottom-0 left-0 w-full h-1/3 water-effect rounded-t-3xl">
+                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/30 animate-ripple"></div>
+                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/20 animate-ripple" style="animation-delay: 0.5s"></div>
+                    </div>
+                    
+                    <!-- 漂浮的硬币 -->
+                    <div id="coins-container" class="absolute inset-0 pointer-events-none"></div>
+                </div>
+                
+                <!-- 互动提示 -->
+                <div class="absolute top-4 left-4 bg-white/80 backdrop-blur px-4 py-2 rounded-full shadow-md">
+                    <p class="text-sm font-medium text-gray-700 flex items-center">
+                        <i class="fa fa-lightbulb-o text-secondary mr-2"></i>
+                        点击水面投掷硬币许愿
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 心愿展示 -->
+    <section id="wishes" class="py-16 md:py-24">
+        <div class="container mx-auto px-4">
+            <div class="max-w-3xl mx-auto text-center mb-16">
+                <h2 class="text-[clamp(1.8rem,3vw,2.5rem)] font-bold text-dark mb-4">心愿展示</h2>
+                <div class="w-20 h-1 bg-primary mx-auto mb-6 rounded-full"></div>
+                <p class="text-gray-600 text-lg">这里承载着来自世界各地人们的美好心愿和祝福</p>
+            </div>
+            
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- 心愿卡片1 -->
+                <div class="bg-white rounded-xl shadow-md p-6 transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                    <div class="flex items-center mb-4">
+                        <img src="https://picsum.photos/id/64/100/100" alt="用户头像" class="w-12 h-12 rounded-full object-cover">
+                        <div class="ml-3">
+                            <h4 class="font-semibold">李明</h4>
+                            <p class="text-sm text-gray-500">3天前</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-4">"希望我的家人身体健康，平安喜乐，每天都能开开心心。"</p>
+                    <div class="flex items-center text-gray-500 text-sm">
+                        <span class="flex items-center mr-4">
+                            <i class="fa fa-heart-o mr-1"></i> 24
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fa fa-comment-o mr-1"></i> 3
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- 心愿卡片2 -->
+                <div class="bg-white rounded-xl shadow-md p-6 transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                    <div class="flex items-center mb-4">
+                        <img src="https://picsum.photos/id/65/100/100" alt="用户头像" class="w-12 h-12 rounded-full object-cover">
+                        <div class="ml-3">
+                            <h4 class="font-semibold">张华</h4>
+                            <p class="text-sm text-gray-500">1周前</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-4">"愿我的事业顺利发展，能够实现自己的职业目标，创造更多价值。"</p>
+                    <div class="flex items-center text-gray-500 text-sm">
+                        <span class="flex items-center mr-4">
+                            <i class="fa fa-heart-o mr-1"></i> 18
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fa fa-comment-o mr-1"></i> 2
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- 心愿卡片3 -->
+                <div class="bg-white rounded-xl shadow-md p-6 transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                    <div class="flex items-center mb-4">
+                        <img src="https://picsum.photos/id/66/100/100" alt="用户头像" class="w-12 h-12 rounded-full object-cover">
+                        <div class="ml-3">
+                            <h4 class="font-semibold">王芳</h4>
+                            <p class="text-sm text-gray-500">2周前</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-4">"希望世界和平，没有战争和饥饿，每个人都能过上幸福的生活。"</p>
+                    <div class="flex items-center text-gray-500 text-sm">
+                        <span class="flex items-center mr-4">
+                            <i class="fa fa-heart-o mr-1"></i> 42
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fa fa-comment-o mr-1"></i> 7
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- 心愿卡片4 -->
+                <div class="bg-white rounded-xl shadow-md p-6 transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                    <div class="flex items-center mb-4">
+                        <img src="https://picsum.photos/id/91/100/100" alt="用户头像" class="w-12 h-12 rounded-full object-cover">
+                        <div class="ml-3">
+                            <h4 class="font-semibold">刘伟</h4>
+                            <p class="text-sm text-gray-500">3周前</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-4">"愿我的孩子能够健康成长，拥有快乐的童年和美好的未来。"</p>
+                    <div class="flex items-center text-gray-500 text-sm">
+                        <span class="flex items-center mr-4">
+                            <i class="fa fa-heart-o mr-1"></i> 31
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fa fa-comment-o mr-1"></i> 5
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- 心愿卡片5 -->
+                <div class="bg-white rounded-xl shadow-md p-6 transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                    <div class="flex items-center mb-4">
+                        <img src="https://picsum.photos/id/26/100/100" alt="用户头像" class="w-12 h-12 rounded-full object-cover">
+                        <div class="ml-3">
+                            <h4 class="font-semibold">陈明</h4>
+                            <p class="text-sm text-gray-500">1个月前</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-4">"希望能够环游世界，领略不同国家的风土人情，丰富自己的人生阅历。"</p>
+                    <div class="flex items-center text-gray-500 text-sm">
+                        <span class="flex items-center mr-4">
+                            <i class="fa fa-heart-o mr-1"></i> 27
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fa fa-comment-o mr-1"></i> 4
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- 心愿卡片6 -->
+                <div class="bg-white rounded-xl shadow-md p-6 transform transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                    <div class="flex items-center mb-4">
+                        <img src="https://picsum.photos/id/62/100/100" alt="用户头像" class="w-12 h-12 rounded-full object-cover">
+                        <div class="ml-3">
+                            <h4 class="font-semibold">赵静</h4>
+                            <p class="text-sm text-gray-500">1个月前</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 mb-4">"愿所有的疾病都能被治愈，医护人员能够得到应有的尊重和关爱。"</p>
+                    <div class="flex items-center text-gray-500 text-sm">
+                        <span class="flex items-center mr-4">
+                            <i class="fa fa-heart-o mr-1"></i> 53
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fa fa-comment-o mr-1"></i> 9
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-12">
+                <button class="bg-white border border-primary text-primary hover:bg-primary hover:text-white font-medium px-6 py-2 rounded-full transition-colors duration-300">
+                    查看更多心愿
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 许下心愿 -->
+    <section id="make-wish" class="py-16 md:py-24 bg-gradient-to-br from-primary/5 to-accent/5">
+        <div class="container mx-auto px-4">
+            <div class="max-w-4xl mx-auto">
+                <div class="max-w-3xl mx-auto text-center mb-12">
+                    <h2 class="text-[clamp(1.8rem,3vw,2.5rem)] font-bold text-dark mb-4">许下你的心愿</h2>
+                    <div class="w-20 h-1 bg-primary mx-auto mb-6 rounded-full"></div>
+                    <p class="text-gray-600 text-lg">在这里，你可以许下最真挚的愿望，让它随着涟漪扩散到远方</p>
+                </div>
+                
+                <div class="bg-white rounded-2xl shadow-xl p-8 md:p-10">
+                    <form id="wish-form" class="space-y-6">
+                        <div>
+                            <label for="name" class="block text-gray-700 font-medium mb-2">你的名字</label>
+                            <input type="text" id="name" name="name" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="请输入你的名字">
+                        </div>
+                        
+                        <div>
+                            <label for="wish" class="block text-gray-700 font-medium mb-2">你的心愿</label>
+                            <textarea id="wish" name="wish" rows="4" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none" placeholder="请写下你的心愿..."></textarea>
+                            <p class="text-sm text-gray-500 mt-1">分享你的希望和梦想，让世界听到你的心声</p>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" id="anonymous" name="anonymous" class="w-4 h-4 text-primary focus:ring-primary/20 border-gray-300 rounded">
+                            <label for="anonymous" class="ml-2 text-gray-700">匿名发布</label>
+                        </div>
+                        
+                        <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                            许下心愿
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 许愿故事 -->
+    <section id="stories" class="py-16 md:py-24">
+        <div class="container mx-auto px-4">
+            <div class="max-w-3xl mx-auto text-center mb-16">
+                <h2 class="text-[clamp(1.8rem,3vw,2.5rem)] font-bold text-dark mb-4">许愿故事</h2>
+                <div class="w-20 h-1 bg-primary mx-auto mb-6 rounded-full"></div>
+                <p class="text-gray-600 text-lg">那些关于愿望成真的美好故事，或许能给你带来启发和希望</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-10 max-w-6xl mx-auto">
+                <!-- 故事1 -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="aspect-video">
+                        <img src="https://picsum.photos/id/1060/800/450" alt="愿望成真的故事" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-3">重获新生的愿望</h3>
+                        <p class="text-gray-600 mb-4">三年前，我在许愿池许下了希望母亲康复的愿望。如今，母亲的身体日渐好转，我们一家人又能像以前一样幸福生活了。这个愿望让我明白，只要心存希望，奇迹就会发生。</p>
+                        <div class="flex items-center text-gray-500">
+                            <img src="https://picsum.photos/id/23/100/100" alt="作者头像" class="w-8 h-8 rounded-full mr-2">
+                            <span>林小姐</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 故事2 -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="aspect-video">
+                        <img src="https://picsum.photos/id/1059/800/450" alt="愿望成真的故事" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-xl font-bold mb-3">意外的重逢</h3>
+                        <p class="text-gray-600 mb-4">十年前，我在异国他乡的许愿池许下了希望与儿时好友重逢的愿望。没想到，上个月在一次学术会议上，我们竟然真的相遇了。原来，有些愿望需要时间的沉淀，但终究会实现。</p>
+                        <div class="flex items-center text-gray-500">
+                            <img src="https://picsum.photos/id/93/100/100" alt="作者头像" class="w-8 h-8 rounded-full mr-2">
+                            <span>张先生</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 订阅区域 -->
+    <section class="py-16 bg-primary/10">
+        <div class="container mx-auto px-4">
+            <div class="max-w-3xl mx-auto text-center">
+                <h2 class="text-2xl md:text-3xl font-bold text-dark mb-4">订阅心愿动态</h2>
+                <p class="text-gray-600 mb-8">定期收到来自许愿池的美好愿望和故事，让温暖与希望常伴你左右</p>
+                
+                <form class="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto">
+                    <input type="email" placeholder="请输入你的邮箱地址" class="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
+                    <button type="submit" class="bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 whitespace-nowrap">
+                        立即订阅
+                    </button>
+                </form>
+                <p class="text-sm text-gray-500 mt-4">我们尊重您的隐私，绝不会向第三方分享您的信息</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-6">
+                        <i class="fa fa-fountain text-secondary text-2xl"></i>
+                        <span class="text-xl font-bold">许愿池</span>
+                    </div>
+                    <p class="text-gray-400 mb-6">每一个愿望都值得被尊重，每一份希望都值得被守护。</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fa fa-weixin text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fa fa-weibo text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fa fa-instagram text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fa fa-twitter text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-semibold mb-6">快速链接</h4>
+                    <ul class="space-y-3">
+                        <li><a href="#about" class="text-gray-400 hover:text-white transition-colors">关于许愿池</a></li>
+                        <li><a href="#wishes" class="text-gray-400 hover:text-white transition-colors">心愿展示</a></li>
+                        <li><a href="#make-wish" class="text-gray-400 hover:text-white transition-colors">许下心愿</a></li>
+                        <li><a href="#stories" class="text-gray-400 hover:text-white transition-colors">许愿故事</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-semibold mb-6">相关资源</h4>
+                    <ul class="space-y-3">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">许愿池的历史</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">世界各地的许愿池</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">许愿文化</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">常见问题</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-semibold mb-6">联系我们</h4>
+                    <ul class="space-y-3">
+                        <li class="flex items-start">
+                            <i class="fa fa-envelope-o text-gray-400 mt-1 mr-3"></i>
+                            <span class="text-gray-400">contact@xuyuanchi.com</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa fa-phone text-gray-400 mt-1 mr-3"></i>
+                            <span class="text-gray-400">+86 123 4567 8910</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fa fa-map-marker text-gray-400 mt-1 mr-3"></i>
+                            <span class="text-gray-400">北京市朝阳区幸福路88号</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 mt-12 pt-8 text-center text-gray-500 text-sm">
+                <p>© 2023 许愿池 版权所有 | 保留所有权利</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 回到顶部按钮 -->
+    <button id="back-to-top" class="fixed bottom-8 right-8 bg-primary text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg opacity-0 invisible transition-all duration-300 hover:bg-primary/90">
+        <i class="fa fa-chevron-up"></i>
+    </button>
+
+    <!-- 许愿成功弹窗 -->
+    <div id="wish-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 invisible transition-all duration-300">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300">
+            <div class="text-center">
+                <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fa fa-check text-green-500 text-3xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-dark mb-3">心愿已许下</h3>
+                <p class="text-gray-600 mb-6">你的愿望已经随着涟漪扩散到远方，愿它早日实现。</p>
+                <button id="close-modal" class="bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 w-full">
+                    确定
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 音频元素 -->
+    <audio id="background-music" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+     您的浏览器不支持音频播放
+    </audio>
+
+    <script>
+        // 音乐播放功能
+        const musicToggle = document.getElementById('music-toggle');
+        const musicPlayer = document.getElementById('music-player');
+        const playPauseBtn = document.getElementById('play-pause');
+        const prevTrackBtn = document.getElementById('prev-track');
+        const nextTrackBtn = document.getElementById('next-track');
+        const volumeSlider = document.getElementById('volume-slider');
+        const currentTrackEl = document.getElementById('current-track');
+        const trackArtistEl = document.getElementById('track-artist');
+        const musicIndicator = document.getElementById('music-indicator');
+        const backgroundMusic = document.getElementById('background-music');
+        
+        // 音乐播放列表
+        const tracks = [
+            {
+                title: "流水轻音",
+                artist: "自然之声",
+                url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+            },
+            {
+                title: "月光下的许愿池",
+                artist: "钢琴独白",
+                url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+            },
+            {
+                title: "涟漪",
+                artist: "新世纪音乐",
+                url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"
+            }
+        ];
+        
+        let currentTrackIndex = 0;
+        let isPlaying = false;
+        
+        // 更新当前播放曲目信息
+        function updateTrackInfo() {
+            const track = tracks[currentTrackIndex];
+            currentTrackEl.textContent = track.title;
+            trackArtistEl.textContent = track.artist;
+            backgroundMusic.src = track.url;
+            
+            if (isPlaying) {
+                backgroundMusic.play();
+            }
+        }
+        
+        // 切换播放/暂停状态
+        function togglePlayPause() {
+            if (isPlaying) {
+                backgroundMusic.pause();
+                playPauseBtn.innerHTML = '<i class="fa fa-play"></i>';
+                musicIndicator.classList.remove('opacity-100', 'animate-pulse-slow');
+                musicIndicator.classList.add('opacity-0');
+            } else {
+                backgroundMusic.play().catch(e => {
+                    console.log("自动播放被浏览器阻止，请手动点击播放按钮:", e);
+                });
+                playPauseBtn.innerHTML = '<i class="fa fa-pause"></i>';
+                musicIndicator.classList.add('opacity-100', 'animate-pulse-slow');
+                musicIndicator.classList.remove('opacity-0');
+            }
+            isPlaying = !isPlaying;
+        }
+        
+        // 切换到上一曲
+        function prevTrack() {
+            currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+            updateTrackInfo();
+        }
+        
+        // 切换到下一曲
+        function nextTrack() {
+            currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+            updateTrackInfo();
+        }
+        
+        // 调整音量
+        function adjustVolume() {
+            backgroundMusic.volume = volumeSlider.value / 100;
+        }
+        
+        // 切换音乐播放器显示/隐藏
+        function toggleMusicPlayer() {
+            musicPlayer.classList.toggle('active');
+        }
+        
+        // 事件监听
+        musicToggle.addEventListener('click', toggleMusicPlayer);
+        playPauseBtn.addEventListener('click', togglePlayPause);
+        prevTrackBtn.addEventListener('click', prevTrack);
+        nextTrackBtn.addEventListener('click', nextTrack);
+        volumeSlider.addEventListener('input', adjustVolume);
+        
+        // 初始化音量
+        adjustVolume();
+        
+        // 导航栏滚动效果
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                navbar.classList.add('py-2', 'shadow');
+                navbar.classList.remove('py-3');
+            } else {
+                navbar.classList.add('py-3');
+                navbar.classList.remove('py-2', 'shadow');
+            }
+        });
+        
+        // 移动端菜单切换
+        const menuToggle = document.getElementById('menu-toggle');
+        const mobileMenu = document.getElementById('mobile-menu');
+        menuToggle.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+        
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                // 关闭移动端菜单
+                if (!mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.add('hidden');
+                }
+                
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        // 回到顶部按钮
+        const backToTopButton = document.getElementById('back-to-top');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                backToTopButton.classList.remove('opacity-0', 'invisible');
+                backToTopButton.classList.add('opacity-100', 'visible');
+            } else {
+                backToTopButton.classList.add('opacity-0', 'invisible');
+                backToTopButton.classList.remove('opacity-100', 'visible');
+            }
+        });
+        
+        backToTopButton.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+        
+        // 许愿池硬币效果
+        const coinsContainer = document.getElementById('coins-container');
+        const wishingWell = document.querySelector('.aspect-[4/3]');
+        
+        // 随机生成硬币
+        function createRandomCoins() {
+            for (let i = 0; i < 10; i++) {
+                setTimeout(() => {
+                    createCoin(
+                        Math.random() * 100,
+                        Math.random() * 100,
+                        Math.random() * 2 + 1
+                    );
+                }, i * 3000);
+            }
+        }
+        
+        // 创建硬币
+        function createCoin(xPercent, yPercent, size) {
+            const coin = document.createElement('div');
+            coin.classList.add('coin');
+            coin.style.left = `${xPercent}%`;
+            coin.style.top = `${yPercent}%`;
+            coin.style.width = `${size * 6}px`;
+            coin.style.height = `${size * 6}px`;
+            
+            coinsContainer.appendChild(coin);
+            
+            // 硬币动画
+            setTimeout(() => {
+                coin.style.opacity = '1';
+                coin.style.transition = 'all 1s ease-in';
+                coin.style.transform = 'translateY(50px) scale(0.5)';
+                coin.style.opacity = '0';
+                
+                // 移除硬币
+                setTimeout(() => {
+                    coin.remove();
+                }, 1000);
+            }, 10);
+        }
+        
+        // 点击许愿池生成硬币和播放音效
+        wishingWell.addEventListener('click', (e) => {
+            const rect = wishingWell.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+            
+            // 只在水的区域生成硬币
+            if (y > 65) {
+                createCoin(x, y, 1.5);
+                
+                // 创建涟漪效果
+                const ripple = document.createElement('div');
+                ripple.className = 'absolute rounded-full bg-white/30 animate-ripple';
+                ripple.style.width = '10px';
+                ripple.style.height = '10px';
+                ripple.style.left = `${x}%`;
+                ripple.style.top = `${y}%`;
+                ripple.style.transform = 'translate(-50%, -50%)';
+                coinsContainer.appendChild(ripple);
+                
+                // 播放水滴音效
+                const dropSound = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3');
+                dropSound.volume = 0.2;
+                dropSound.play().catch(e => console.log("音效播放失败:", e));
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 2000);
+            }
+        });
+        
+        // 表单提交处理
+        const wishForm = document.getElementById('wish-form');
+        const wishModal = document.getElementById('wish-modal');
+        const closeModal = document.getElementById('close-modal');
+        
+        wishForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // 显示弹窗
+            wishModal.classList.remove('opacity-0', 'invisible');
+            wishModal.classList.add('opacity-100', 'visible');
+            wishModal.querySelector('div').classList.remove('scale-95');
+            wishModal.querySelector('div').classList.add('scale-100');
+            
+            // 播放许愿成功音效
+            const successSound = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3');
+            successSound.volume = 0.3;
+            successSound.play().catch(e => console.log("音效播放失败:", e));
+            
+            // 重置表单
+            wishForm.reset();
+        });
+        
+        closeModal.addEventListener('click', () => {
+            wishModal.classList.add('opacity-0', 'invisible');
+            wishModal.classList.remove('opacity-100', 'visible');
+            wishModal.querySelector('div').classList.add('scale-95');
+            wishModal.querySelector('div').classList.remove('scale-100');
+        });
+        
+        // 点击弹窗外部关闭
+        wishModal.addEventListener('click', (e) => {
+            if (e.target === wishModal) {
+                closeModal.click();
+            }
+        });
+        
+        // 初始化
+        window.addEventListener('load', () => {
+            createRandomCoins();
+            
+            // 周期性生成硬币
+            setInterval(createRandomCoins, 30000);
+            
+            // 尝试自动播放音乐（可能被浏览器阻止）
+            setTimeout(() => {
+                backgroundMusic.volume = 0.1;
+                backgroundMusic.play().then(() => {
+                    togglePlayPause(); // 如果自动播放成功，则更新UI
+                }).catch(e => {
+                    console.log("自动播放被阻止，等待用户交互:", e);
+                });
+            }, 1000);
+        });
+    </script>
+
+
+</body></html>
+    
